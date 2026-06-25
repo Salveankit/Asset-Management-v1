@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import environ
@@ -5,8 +6,8 @@ import environ
 BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(
     DEBUG=(bool, False),
-    DJANGO_ALLOWED_HOSTS=(list, ["127.0.0.1", "localhost"]),
-    CSRF_TRUSTED_ORIGINS=(list, []),
+    DJANGO_ALLOWED_HOSTS=(list, ["127.0.0.1", "localhost", ".vercel.app"]),
+    CSRF_TRUSTED_ORIGINS=(list, ["https://*.vercel.app"]),
     PRODUCT_NAME=(str, "Asset Platform"),
     PRODUCT_SHORT_NAME=(str, "AssetOps"),
     COMPANY_NAME=(str, "Organisation Workspace"),
@@ -29,8 +30,17 @@ SECRET_KEY = env(
     default="django-insecure-phase-1-bootstrap-only-change-me",
 )
 DEBUG = env("DEBUG")
-ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
-CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
+ALLOWED_HOSTS = list(env("DJANGO_ALLOWED_HOSTS"))
+vercel_host = os.environ.get("VERCEL_URL", "").strip()
+if vercel_host:
+    vercel_host = vercel_host.removeprefix("https://").removeprefix("http://").split("/")[0]
+    if vercel_host and vercel_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(vercel_host)
+CSRF_TRUSTED_ORIGINS = list(env("CSRF_TRUSTED_ORIGINS"))
+if vercel_host:
+    vercel_origin = f"https://{vercel_host}"
+    if vercel_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(vercel_origin)
 
 PRODUCT_NAME = env("PRODUCT_NAME")
 PRODUCT_SHORT_NAME = env("PRODUCT_SHORT_NAME")
@@ -136,6 +146,11 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+if env.bool("VERCEL", default=False):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    USE_X_FORWARDED_HOST = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'accounts.User'
 LOGIN_URL = 'login'
@@ -162,6 +177,8 @@ AZURE_OPENAI = {
     'timeout_seconds': env("AZURE_OPENAI_TIMEOUT_SECONDS"),
     'max_retries': env("AZURE_OPENAI_MAX_RETRIES"),
 }
+
+
 
 
 
