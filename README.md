@@ -9,7 +9,7 @@ Django-based asset management platform with inventory modules, review workflows,
 - Celery
 - Redis
 - Django templates
-- SQLite for local bootstrap, PostgreSQL-ready configuration
+- PostgreSQL-ready configuration for production, SQLite only for local development
 
 ## GitHub-Safe Configuration
 
@@ -23,7 +23,7 @@ Ignored by default:
 - `media/`
 - `staticfiles/`
 
-Use `.env.example` as the template for local configuration. Never commit real API keys or production secrets.
+Use `.env.example` as the template for local configuration. For production on Vercel, create a separate env file or use Vercel environment variables with `DATABASE_URL` pointing to Neon PostgreSQL. Never commit real API keys or production secrets.
 
 ## Local Setup
 
@@ -54,7 +54,7 @@ The AI intake flow works without committed secrets, but Azure OpenAI-backed extr
 - `AZURE_OPENAI_DEPLOYMENT`
 - `AZURE_OPENAI_API_VERSION`
 
-Set them only in your local `.env.local`, never in tracked files.
+Set them only in your local `.env.local` for development, or in Vercel environment variables for production, never in tracked files.
 
 ## Development Notes
 
@@ -67,5 +67,6 @@ Examples:
 .\dev.ps1 runserver
 .\dev.ps1 test ai_intake
 ```
+
 
 
