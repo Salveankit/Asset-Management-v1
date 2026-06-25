@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import environ
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(
@@ -147,6 +148,8 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 if env.bool("VERCEL", default=False):
+    if not os.environ.get("DATABASE_URL"):
+        raise ImproperlyConfigured("DATABASE_URL must be set on Vercel for authentication and sessions.")
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     USE_X_FORWARDED_HOST = True
     SESSION_COOKIE_SECURE = True
@@ -177,6 +180,7 @@ AZURE_OPENAI = {
     'timeout_seconds': env("AZURE_OPENAI_TIMEOUT_SECONDS"),
     'max_retries': env("AZURE_OPENAI_MAX_RETRIES"),
 }
+
 
 
 
