@@ -1,0 +1,27 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Group Detail :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h3 mb-1">{{ object.name }}</h1>
+    </div>
+    {% if request.user.is_staff %}
+    <a class="btn btn-primary" href="{% url 'people:group-edit' object.pk %}">Edit</a>
+    {% endif %}
+</div>
+
+<section class="panel-card">
+    <div class="panel-card__body">
+        <h2 class="h5 mb-3">Permissions</h2>
+        <ul class="mb-0">
+            {% for permission in object.permissions.all %}
+            <li>{{ permission.content_type.app_label }}.{{ permission.codename }}</li>
+            {% empty %}
+            <li class="text-secondary">No permissions assigned.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+{% endblock %}

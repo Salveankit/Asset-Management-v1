@@ -1,0 +1,432 @@
+{% extends "layouts/base.html" %}
+{% load core_tags %}
+
+{% block title %}AI Intake Detail :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<div class="ai-review-page ai-review-page--refined">
+    <header class="ai-review-header panel-card">
+        <div class="ai-review-header__identity">
+            <div class="ai-review-header__topline">
+                <div class="ai-review-breadcrumb"><i class="bi bi-stars"></i><span>AI Intake / Review</span></div>
+                <span class="status-pill status-pill--{{ document_status_tone }}">{{ object.get_status_display }}</span>
+            </div>
+            <div class="ai-review-title-row">
+                <h1 class="ai-review-title">{{ object.original_filename }}</h1>
+            </div>
+            <div class="ai-review-meta">
+                <span><i class="bi bi-file-earmark-text"></i>{{ object.content_type|default:"Unknown file type" }}</span>
+                <span><i class="bi bi-hdd-stack"></i>{{ object.size_bytes }} bytes</span>
+                <span><i class="bi bi-clock-history"></i>Uploaded {{ object.created_at }}</span>
+            </div>
+        </div>
+        <div class="ai-review-header__actions">
+            <a class="btn btn-outline-secondary" href="{% url 'ai_intake:list' %}"><i class="bi bi-arrow-left"></i><span>Back</span></a>
+            {% if request.user.is_staff and invoice_review %}
+            <form class="ai-review-inline-form" method="post" action="{% url 'ai_intake:line-item-retry' object.pk %}" onsubmit="return confirm('Retry invoice extraction? The current extracted line items will be replaced by a fresh attempt.');">
+                {% csrf_token %}
+                <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-arrow-repeat"></i><span>Retry Extraction</span></button>
+            </form>
+            {% endif %}
+            {% if request.user.is_staff and draft and draft.status != 'approved' %}
+            <form class="ai-review-inline-form" method="post" action="{% url 'ai_intake:retry' draft.pk %}" onsubmit="return confirm('Retry extraction? Current extracted values may be replaced.');">
+                {% csrf_token %}
+                <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-arrow-repeat"></i><span>Retry Extraction</span></button>
+            </form>
+            <form class="ai-review-inline-form" method="post" action="{% url 'ai_intake:delete' object.pk %}" onsubmit="return confirm('Delete this uploaded file and all extracted AI intake data?');">
+                {% csrf_token %}
+                <button class="btn btn-outline-danger" type="submit"><i class="bi bi-trash3"></i><span>Delete Upload</span></button>
+            </form>
+            {% endif %}
+        </div>
+    </header>
+
+    <section class="ai-review-workspace ai-review-workspace--refined">
+        <div class="ai-review-main-column">
+            <article class="ai-review-document panel-card">
+                <div class="ai-review-document__header ai-review-document__header--refined">
+                    <div>
+                        <h2 class="ai-review-section-title"><i class="bi bi-file-earmark-richtext"></i><span>Source Document</span></h2>
+                        <p class="ai-review-section-copy">Inspect the original upload at readable scale, then compare the extracted fields in the review console.</p>
+                    </div>
+                    <div class="ai-review-document__toolbar">
+                        <button class="btn btn-outline-secondary btn-sm" type="button" data-dialog-open="document-details-dialog"><i class="bi bi-info-circle"></i><span>Document Details</span></button>
+                        <a class="btn btn-outline-secondary btn-sm" href="{{ preview_url }}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i><span>Open Original</span></a>
+                    </div>
+                </div>
+                <div class="ai-review-document__stage ai-review-document__stage--refined">
+                    {% if is_preview_image %}
+                    <img src="{{ preview_url }}" alt="{{ object.original_filename }}" class="ai-review-document__media ai-review-document__media--image">
+                    {% elif is_preview_pdf %}
+                    <iframe src="{{ preview_url }}" title="{{ object.original_filename }}" class="ai-review-document__media ai-review-document__media--pdf"></iframe>
+                    {% else %}
+                    <div class="empty-state ai-review-empty-state">
+                        <div class="empty-state__title">Inline preview unavailable</div>
+                        <p class="empty-state__copy">Use Open Original to inspect this file type.</p>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="ai-review-document__footer">
+                    <div class="ai-review-document__meta-chip">
+                        <span class="ai-review-document__meta-label">Preview mode</span>
+                        <strong>{% if is_preview_pdf %}Embedded PDF viewer{% elif is_preview_image %}Original image{% else %}Direct file access{% endif %}</strong>
+                    </div>
+                    <div class="ai-review-document__meta-chip">
+                        <span class="ai-review-document__meta-label">Comparison focus</span>
+                        <strong>Original upload vs extracted intake data</strong>
+                    </div>
+                </div>
+            </article>
+
+            <div class="ai-review-support-grid">
+
+                <section class="ai-review-support-card panel-card">
+                    <div class="ai-review-section-heading">
+                        <h2 class="ai-review-section-title"><i class="bi bi-activity"></i><span>Activity</span></h2>
+                    </div>
+                    <div class="ai-review-activity__list ai-review-activity__list--flat">
+                        {% for event in object.audit_events.all %}
+                        <div class="ai-review-activity__item">
+                            <div class="ai-review-activity__title">{{ event.get_event_type_display }}</div>
+                            <div class="ai-review-activity__meta">{{ event.created_at }}{% if event.actor %} | {{ event.actor }}{% endif %}{% if event.status %} | {{ event.status|title }}{% endif %}{% if event.latency_ms %} | {{ event.latency_ms }} ms{% endif %}</div>
+                        </div>
+                        {% empty %}
+                        <div class="ai-review-activity__meta">No activity recorded yet.</div>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <aside class="ai-review-side panel-card ai-review-side--refined">
+            {% if draft %}
+            <form method="post" action="{% url 'ai_intake:save' draft.pk %}" class="ai-review-form" id="ai-review-form">
+                {% csrf_token %}
+                <div class="ai-review-side__body ai-review-side__body--refined">
+                    <div class="ai-review-summary ai-review-summary--refined">
+                        <div class="ai-review-summary__item">
+                            <span>Status</span>
+                            <strong>{{ draft.get_status_display }}</strong>
+                        </div>
+                        <div class="ai-review-summary__item">
+                            <span>Risk</span>
+                            <strong>{{ draft.get_duplicate_risk_level_display }}</strong>
+                        </div>
+                        <div class="ai-review-summary__item">
+                            <span>Recommendation</span>
+                            <strong>{{ draft.get_recommended_action_display }}</strong>
+                        </div>
+                    </div>
+
+                    <section class="ai-review-guidance">
+                        <div class="ai-review-guidance__eyebrow">Manual comparison workspace</div>
+                        <p class="ai-review-guidance__copy">Keep the source document in view while correcting extracted values. Approval should only happen after the original upload and the intake fields match.</p>
+                    </section>
+
+                    <section class="ai-review-block ai-review-block--primary">
+                        <div class="ai-review-section-heading">
+                            <h2 class="ai-review-section-title"><i class="bi bi-grid-3x3-gap"></i><span>Extracted Information</span></h2>
+                        </div>
+
+                        {% for group in review_groups %}
+                        <div class="ai-review-group">
+                            <div class="ai-review-group__header">
+                                <h3 class="ai-review-group__title">{{ group.title }}</h3>
+                            </div>
+                            <div class="ai-review-grid">
+                                {% for field_name, label, width, placeholder in group.fields %}
+                                <div class="ai-review-field {% if width == 'full' %}ai-review-field--full{% endif %}">
+                                    <label class="ai-review-label" for="review-field-{{ field_name }}">{{ label }}</label>
+                                    {% if field_name == 'notes' %}
+                                    <textarea class="ai-review-input ai-review-input--textarea" id="review-field-{{ field_name }}" name="{{ field_name }}" rows="4" placeholder="{{ placeholder }}">{{ extracted|get_item:field_name|default:"" }}</textarea>
+                                    {% elif field_name == 'quantity' %}
+                                    <input class="ai-review-input" id="review-field-{{ field_name }}" name="{{ field_name }}" type="number" min="1" value="{{ extracted|get_item:field_name|default:"1" }}" placeholder="{{ placeholder }}">
+                                    {% else %}
+                                    <input class="ai-review-input" id="review-field-{{ field_name }}" name="{{ field_name }}" type="text" value="{{ extracted|get_item:field_name|default:"" }}" placeholder="{{ placeholder }}">
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </section>
+
+                    <section class="ai-review-block">
+                        <div class="ai-review-section-heading">
+                            <h2 class="ai-review-section-title"><i class="bi bi-diagram-3"></i><span>Routing</span></h2>
+                        </div>
+                        {% if company_count == 0 or location_count == 0 %}
+                        <div class="ai-review-routing-warning">
+                            {% if company_count == 0 %}<span>No active companies are available.</span>{% endif %}
+                            {% if location_count == 0 %}<span>No active locations are available.</span>{% endif %}
+                        </div>
+                        {% endif %}
+                        <div class="ai-review-grid ai-review-grid--routing">
+                            <div class="ai-review-field">
+                                <label class="ai-review-label" for="{{ approve_form.company.id_for_label }}">{{ approve_form.company.label }}</label>
+                                {{ approve_form.company }}
+                            </div>
+                            <div class="ai-review-field">
+                                <label class="ai-review-label" for="{{ approve_form.location.id_for_label }}">{{ approve_form.location.label }}</label>
+                                {{ approve_form.location }}
+                            </div>
+                            <div class="ai-review-field ai-review-field--full">
+                                <label class="ai-review-label" for="{{ approve_form.review_notes.id_for_label }}">{{ approve_form.review_notes.label }}</label>
+                                {{ approve_form.review_notes }}
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                {% if request.user.is_staff and draft.status != 'approved' %}
+                <div class="ai-review-footer ai-review-footer--refined ai-review-footer--triple">
+                    <button class="btn btn-outline-danger ai-review-footer__button" type="button" data-dialog-open="reject-dialog"><i class="bi bi-x-octagon"></i><span>Reject Draft</span></button>
+                    <button class="btn btn-outline-secondary ai-review-footer__button" type="submit" formaction="{% url 'ai_intake:save' draft.pk %}"><i class="bi bi-floppy"></i><span>Save Draft</span></button>
+                    <button class="btn btn-primary ai-review-footer__button ai-review-footer__button--primary" type="submit" formaction="{% url 'ai_intake:approve' draft.pk %}"><i class="bi bi-check2-circle"></i><span>Approve &amp; Create Asset</span></button>
+                </div>
+                {% elif draft.approved_asset %}
+                <div class="ai-review-footer ai-review-footer--approved">
+                    Approved Asset: <a href="{% url 'assets:detail' draft.approved_asset.pk %}">{{ draft.approved_asset }}</a>
+                </div>
+                {% endif %}
+            </form>
+            {% elif invoice_review %}
+            <div class="ai-review-side__body ai-review-side__body--refined">
+                {% if invoice_review_alerts %}
+                <section class="ai-review-block">
+                    <div class="ai-review-section-heading">
+                        <h2 class="ai-review-section-title"><i class="bi bi-shield-exclamation"></i><span>Review Notes</span></h2>
+                    </div>
+                    <div class="ai-review-activity__list ai-review-activity__list--flat">
+                        {% for issue in invoice_review_alerts %}
+                        <div class="ai-review-activity__item">
+                            <div class="ai-review-activity__title">{{ issue.title }}</div>
+                            <div class="ai-review-activity__meta">{{ issue.severity|title }} | {{ issue.message }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+                <div class="ai-review-summary ai-review-summary--refined">
+                    <div class="ai-review-summary__item">
+                        <span>Workflow</span>
+                        <strong>Line-item review</strong>
+                    </div>
+                    <div class="ai-review-summary__item">
+                        <span>Status</span>
+                        <strong>{{ invoice_review.get_status_display }}</strong>
+                    </div>
+                    <div class="ai-review-summary__item">
+                        <span>Rows extracted</span>
+                        <strong>{{ invoice_review_overview.line_item_count }}</strong>
+                    </div>
+                </div>
+
+                <section class="ai-review-guidance">
+                    <div class="ai-review-guidance__eyebrow">Invoice extraction ready</div>
+                    <p class="ai-review-guidance__copy">This document is using the line-item workflow. Review the extracted invoice header and row-level predictions in the workspace instead of the legacy single-draft form.</p>
+                </section>
+
+                <section class="ai-review-block ai-review-block--primary">
+                    <div class="ai-review-section-heading">
+                        <h2 class="ai-review-section-title"><i class="bi bi-receipt"></i><span>Invoice Summary</span></h2>
+                    </div>
+                    <div class="ai-review-summary ai-review-summary--refined">
+                        <div class="ai-review-summary__item">
+                            <span>Supplier</span>
+                            <strong>{{ invoice_review.invoice_metadata.supplier_name|default:"-" }}</strong>
+                        </div>
+                        <div class="ai-review-summary__item">
+                            <span>Invoice</span>
+                            <strong>{{ invoice_review.invoice_metadata.invoice_number|default:"-" }}</strong>
+                        </div>
+                        <div class="ai-review-summary__item">
+                            <span>Order</span>
+                            <strong>{{ invoice_review.invoice_metadata.order_number|default:"-" }}</strong>
+                        </div>
+                        <div class="ai-review-summary__item">
+                            <span>Date</span>
+                            <strong>{{ invoice_review.invoice_metadata.invoice_date|default:"-" }}</strong>
+                        </div>
+                        <div class="ai-review-summary__item">
+                            <span>Pending rows</span>
+                            <strong>{{ invoice_review_overview.pending_count }}</strong>
+                        </div>
+                        <div class="ai-review-summary__item">
+                            <span>Approved rows</span>
+                            <strong>{{ invoice_review_overview.approved_count }}</strong>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="ai-review-block">
+                    <div class="ai-review-section-heading">
+                        <h2 class="ai-review-section-title"><i class="bi bi-card-checklist"></i><span>Extracted Row Preview</span></h2>
+                    </div>
+                    <div class="ai-review-activity__list ai-review-activity__list--flat">
+                        {% for item in invoice_review_overview.preview_items %}
+                        <div class="ai-review-activity__item">
+                            <div class="ai-review-activity__title">Line {{ item.line_number }} · {{ item.normalized_description|default:item.raw_description|truncatechars:90 }}</div>
+                            <div class="ai-review-activity__meta">{{ item.predicted_inventory_type|default:"Unclassified"|title }}{% if item.quantity %} | Qty {{ item.quantity }}{% endif %} | {{ item.get_review_status_display }}</div>
+                        </div>
+                        {% empty %}
+                        <div class="ai-review-activity__meta">No extracted rows are available yet.</div>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+
+            <div class="ai-review-footer ai-review-footer--refined">
+                <a class="btn btn-primary ai-review-footer__button ai-review-footer__button--primary" href="{{ line_item_workspace_url }}">
+                    <i class="bi bi-table"></i><span>Continue Line-Item Review</span>
+                </a>
+            </div>
+            {% elif processing_state %}
+            <div class="ai-processing-state">
+                <section class="ai-review-block ai-processing-card ai-processing-card--compact">
+                    <div class="ai-review-section-heading">
+                        <h2 class="ai-review-section-title"><i class="bi bi-cpu"></i><span>AI is still working on this document</span></h2>
+                        <span class="status-pill status-pill--{{ job_status_tone }}" id="ai-processing-job-status">{{ latest_job.get_status_display|default:object.get_status_display }}</span>
+                    </div>
+                    <p class="ai-review-guidance__copy" id="ai-processing-message">{{ processing_state.message }}</p>
+                    <div class="ai-processing-hoverline">
+                        <span class="ai-processing-hoverline__dot"></span>
+                        <span id="ai-processing-last-checked">Checking for updates...</span>
+                    </div>
+                </section>
+            </div>
+            {% else %}
+            <div class="empty-state ai-review-empty-state">
+                <div class="empty-state__title">No draft exists for this document yet</div>
+                <p class="empty-state__copy">When extraction succeeds, the extracted information workspace will appear here.</p>
+                {% if latest_job and latest_job.error_message %}
+                <p class="empty-state__copy">Latest failure reason: {{ latest_job.error_message }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </aside>
+    </section>
+</div>
+
+<dialog class="ai-review-dialog" id="document-details-dialog">
+    <form method="dialog" class="ai-review-dialog__surface">
+        <div class="ai-review-dialog__header">
+            <div>
+                <h2 class="ai-review-section-title">Document Details</h2>
+                <p class="ai-review-section-copy mb-0">Technical metadata is available on demand without crowding the active comparison workspace.</p>
+            </div>
+            <button class="ai-review-dialog__close" type="submit" aria-label="Close document details">&times;</button>
+        </div>
+        <dl class="ai-review-details">
+            <div><dt>File type</dt><dd>{{ object.content_type|default:"-" }}</dd></div>
+            <div><dt>File size</dt><dd>{{ object.size_bytes }} bytes</dd></div>
+            <div><dt>Uploaded at</dt><dd>{{ object.created_at }}</dd></div>
+            <div><dt>SHA-256</dt><dd class="ai-review-details__hash">{{ object.sha256 }}</dd></div>
+            {% if latest_job %}
+            <div><dt>Provider</dt><dd>{{ latest_job.provider_name }}</dd></div>
+            <div><dt>Job ID</dt><dd>{{ latest_job.pk }}</dd></div>
+            <div><dt>Request ID</dt><dd>{{ latest_job.provider_request_id|default:"-" }}</dd></div>
+            <div><dt>Latency</dt><dd>{{ latest_job.latency_ms|default:"-" }} ms</dd></div>
+            {% endif %}
+        </dl>
+    </form>
+</dialog>
+{% if processing_state %}
+<script>
+(() => {
+  const statusUrl = "{{ processing_status_url }}";
+  const refreshMs = {{ processing_state.refresh_seconds }} * 1000;
+  const jobStatusNode = document.getElementById('ai-processing-job-status');
+  const messageNode = document.getElementById('ai-processing-message');
+  const lastCheckedNode = document.getElementById('ai-processing-last-checked');
+
+  const updateLastChecked = () => {
+    if (!lastCheckedNode) return;
+    lastCheckedNode.textContent = `Last checked at ${new Date().toLocaleTimeString()}.`;
+  };
+
+  const applyStatus = (payload) => {
+    if (jobStatusNode) {
+      const nextLabel = payload.job_status_display || payload.document_status_display;
+      const nextTone = payload.job_status_tone || payload.document_status_tone || 'neutral';
+      jobStatusNode.textContent = nextLabel;
+      jobStatusNode.className = `status-pill status-pill--${nextTone}`;
+    }
+    if (messageNode && payload.processing_state && payload.processing_state.message) {
+      messageNode.textContent = payload.processing_state.message;
+    }
+    updateLastChecked();
+  };
+
+  const poll = async () => {
+    try {
+      const response = await fetch(statusUrl, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin',
+        cache: 'no-store',
+      });
+      if (!response.ok) {
+        updateLastChecked();
+        return;
+      }
+      const payload = await response.json();
+      if (!payload.is_processing) {
+        window.location.href = payload.detail_url || window.location.href;
+        return;
+      }
+      applyStatus(payload);
+    } catch (error) {
+      updateLastChecked();
+    }
+  };
+
+  updateLastChecked();
+  window.setInterval(poll, refreshMs);
+})();
+</script>
+{% endif %}
+
+{% if request.user.is_staff and draft and draft.status != 'approved' %}
+<dialog class="ai-review-dialog" id="reject-dialog">
+    <div class="ai-review-dialog__surface">
+        <div class="ai-review-dialog__header">
+            <div>
+                <h2 class="ai-review-section-title">Reject Draft</h2>
+                <p class="ai-review-section-copy mb-0">Provide a rejection reason so the review history remains understandable for non-technical users.</p>
+            </div>
+            <button class="ai-review-dialog__close" type="button" data-dialog-close="reject-dialog" aria-label="Close rejection dialog">&times;</button>
+        </div>
+        <form method="post" action="{% url 'ai_intake:reject' draft.pk %}" class="ai-review-dialog__form">
+            {% csrf_token %}
+            <label class="ai-review-label" for="{{ reject_form.review_notes.id_for_label }}">{{ reject_form.review_notes.label }}</label>
+            {{ reject_form.review_notes }}
+            <div class="ai-review-dialog__actions">
+                <button class="btn btn-outline-secondary" type="button" data-dialog-close="reject-dialog">Cancel</button>
+                <button class="btn btn-outline-danger" type="submit">Confirm Rejection</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+{% endif %}
+
+<script>
+(() => {
+  const dialogOpeners = document.querySelectorAll('[data-dialog-open]');
+  const dialogClosers = document.querySelectorAll('[data-dialog-close]');
+
+  dialogOpeners.forEach((button) => {
+    button.addEventListener('click', () => {
+      const dialog = document.getElementById(button.getAttribute('data-dialog-open'));
+      if (dialog) dialog.showModal();
+    });
+  });
+
+  dialogClosers.forEach((button) => {
+    button.addEventListener('click', () => {
+      const dialog = document.getElementById(button.getAttribute('data-dialog-close'));
+      if (dialog) dialog.close();
+    });
+  });
+})();
+</script>
+{% endblock %}

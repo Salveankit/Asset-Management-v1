@@ -1,0 +1,33 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}User Detail :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h3 mb-1">{{ object }}</h1>
+    </div>
+    {% if request.user.is_staff %}
+    <a class="btn btn-primary" href="{% url 'people:user-edit' object.pk %}">Edit</a>
+    {% endif %}
+</div>
+
+<section class="panel-card">
+    <div class="panel-card__body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Username</dt>
+            <dd class="col-sm-9">{{ object.username }}</dd>
+            <dt class="col-sm-3">Email</dt>
+            <dd class="col-sm-9">{{ object.email|default:"-" }}</dd>
+            <dt class="col-sm-3">Company</dt>
+            <dd class="col-sm-9">{{ object.company|default:"-" }}</dd>
+            <dt class="col-sm-3">Department</dt>
+            <dd class="col-sm-9">{{ object.department|default:"-" }}</dd>
+            <dt class="col-sm-3">Location</dt>
+            <dd class="col-sm-9">{{ object.location|default:"-" }}</dd>
+            <dt class="col-sm-3">Groups</dt>
+            <dd class="col-sm-9">{% for group in object.groups.all %}{{ group.name }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</dd>
+        </dl>
+    </div>
+</section>
+{% endblock %}

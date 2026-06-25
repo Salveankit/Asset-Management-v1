@@ -1,0 +1,55 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Locations :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h3 mb-1">Locations</h1>
+        <p class="text-secondary mb-0">Hierarchical physical and organizational places.</p>
+    </div>
+    {% if request.user.is_staff %}
+    <a class="btn btn-primary" href="{% url 'locations:create' %}">Create</a>
+    {% endif %}
+</div>
+
+<section class="panel-card">
+    <div class="panel-card__body">
+        <form class="row g-2 mb-3" method="get">
+            <div class="col-sm-6 col-lg-4">
+                <input class="form-control" type="search" name="q" value="{{ search_query }}" placeholder="Search locations">
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-secondary" type="submit">Search</button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-sm align-middle admin-table">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Parent</th>
+                    <th>Manager</th>
+                    <th>City</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for object in objects %}
+                <tr>
+                    <td>{{ object.name }}</td>
+                    <td>{{ object.parent.name|default:"-" }}</td>
+                    <td>{{ object.manager.username|default:"-" }}</td>
+                    <td>{{ object.city|default:"-" }}</td>
+                    <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{% url 'locations:detail' object.pk %}">View</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-secondary py-4">No locations found.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

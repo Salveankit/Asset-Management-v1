@@ -1,0 +1,76 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Licence Detail :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div><h1 class="h3 mb-1">{{ object.name }}</h1></div>
+    {% if request.user.is_staff %}
+    <div class="d-flex gap-2">
+        <a class="btn btn-primary" href="{% url 'licences:edit' object.pk %}">Edit</a>
+        <form method="post" action="{% url 'licences:delete' object.pk %}">{% csrf_token %}<button class="btn btn-outline-danger" type="submit">Archive</button></form>
+    </div>
+    {% endif %}
+</div>
+<div class="row g-3">
+    <div class="col-12 col-xl-7">
+        <section class="panel-card">
+            <div class="panel-card__body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Name</dt><dd class="col-sm-8">{{ object.name }}</dd>
+                    <dt class="col-sm-4">Company</dt><dd class="col-sm-8">{{ object.company|default:"-" }}</dd>
+                    <dt class="col-sm-4">Seats</dt><dd class="col-sm-8">{{ object.seats }}</dd>
+                    <dt class="col-sm-4">Assigned</dt><dd class="col-sm-8">{{ object.assigned_seat_count }}</dd>
+                    <dt class="col-sm-4">Available</dt><dd class="col-sm-8">{{ object.available_seat_count }}</dd>
+                    <dt class="col-sm-4">Product Key</dt><dd class="col-sm-8">{{ object.product_key|default:"-" }}</dd>
+                    <dt class="col-sm-4">Reference</dt><dd class="col-sm-8">{{ object.reference_code|default:"-" }}</dd>
+                    <dt class="col-sm-4">Category</dt><dd class="col-sm-8">{{ object.category|default:"-" }}</dd>
+                    <dt class="col-sm-4">Manufacturer</dt><dd class="col-sm-8">{{ object.manufacturer|default:"-" }}</dd>
+                    <dt class="col-sm-4">Supplier</dt><dd class="col-sm-8">{{ object.supplier|default:"-" }}</dd>
+                    <dt class="col-sm-4">Depreciation</dt><dd class="col-sm-8">{{ object.depreciation|default:"-" }}</dd>
+                    <dt class="col-sm-4">Purchase Date</dt><dd class="col-sm-8">{{ object.purchase_date|default:"-" }}</dd>
+                    <dt class="col-sm-4">Expiration Date</dt><dd class="col-sm-8">{{ object.expiration_date|default:"-" }}</dd>
+                    <dt class="col-sm-4">Renewal Date</dt><dd class="col-sm-8">{{ object.renewal_date|default:"-" }}</dd>
+                    <dt class="col-sm-4">Billing Term</dt><dd class="col-sm-8">{{ object.billing_term|default:"-" }}</dd>
+                    <dt class="col-sm-4">Order Number</dt><dd class="col-sm-8">{{ object.order_number|default:"-" }}</dd>
+                    <dt class="col-sm-4">Purchase Cost</dt><dd class="col-sm-8">{{ object.purchase_cost|default:"-" }}</dd>
+                    <dt class="col-sm-4">Notes</dt><dd class="col-sm-8">{{ object.notes|default:"-" }}</dd>
+                </dl>
+            </div>
+        </section>
+    </div>
+    <div class="col-12 col-xl-5">
+        <section class="panel-card">
+            <div class="panel-card__body">
+                <h2 class="h5 mb-3">Assign Seat</h2>
+                {% if request.user.is_staff %}
+                <form method="post" action="{{ seat_assign_url }}" class="row g-2 mb-3">
+                    {% csrf_token %}
+                    <div class="col-12">{{ seat_form.assigned_user }}</div>
+                    <div class="col-12">{{ seat_form.assigned_asset }}</div>
+                    <div class="col-12">{{ seat_form.note }}</div>
+                    <div class="col-12"><button class="btn btn-sm btn-primary" type="submit">Assign Seat</button></div>
+                </form>
+                {% endif %}
+                <ul class="list-group list-group-flush">
+                    {% for seat in object.seats_assigned.all %}
+                    <li class="list-group-item px-0">
+                        <div class="fw-semibold">
+                            {% if seat.assigned_user %}User: {{ seat.assigned_user }}{% elif seat.assigned_asset %}Asset: {{ seat.assigned_asset }}{% endif %}
+                        </div>
+                        <div class="small text-secondary">
+                            Assigned {{ seat.assigned_at }}{% if seat.released_at %} · Released {{ seat.released_at }}{% endif %}
+                        </div>
+                        {% if not seat.released_at and request.user.is_staff %}
+                        <form method="post" action="{% url 'licences:seat-release' seat.pk %}" class="mt-2">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary" type="submit">Release</button></form>
+                        {% endif %}
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item px-0 text-secondary">No seats assigned.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

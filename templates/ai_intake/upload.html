@@ -1,0 +1,90 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Upload Intake Document :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<section class="panel-card">
+    <div class="panel-card__body">
+        <form method="post" enctype="multipart/form-data" class="row g-3" id="ai-intake-upload-form">
+            {% csrf_token %}
+            <div class="col-12">
+                <label class="form-label" for="{{ form.file.id_for_label }}">Document</label>
+                {{ form.file }}
+                <div class="text-secondary small mt-1">Accepted types: PDF, PNG, JPG, JPEG, WEBP.</div>
+            </div>
+            <div class="col-12 d-flex gap-2">
+                <button class="btn btn-primary" type="submit" id="ai-intake-submit-button">Upload and Process</button>
+                <a class="btn btn-outline-secondary" href="{% url 'ai_intake:list' %}">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>
+
+<div class="ai-upload-overlay" id="ai-upload-overlay" hidden>
+    <div class="ai-upload-center" role="status" aria-live="polite" aria-atomic="true">
+        <div class="ai-upload-center__halo"></div>
+        <div class="ai-upload-center__botwrap">
+            <span class="ai-upload-center__pulse"></span>
+            <span class="ai-upload-center__pulse ai-upload-center__pulse--delay"></span>
+            <span class="ai-upload-center__bot"><i class="bi bi-stars"></i></span>
+        </div>
+        <div class="ai-upload-center__eyebrow">AI magic in progress</div>
+        <div class="ai-upload-center__title">The assistant is reading your document</div>
+        <div class="ai-upload-center__message" id="ai-upload-overlay-message">Uploading file securely...</div>
+        <div class="ai-upload-center__progress-meta">
+            <span>Processing live</span>
+            <strong id="ai-upload-overlay-percent">12%</strong>
+        </div>
+        <div class="ai-upload-center__progress" aria-hidden="true">
+            <span id="ai-upload-overlay-bar"></span>
+        </div>
+    </div>
+</div>
+
+<script>
+(() => {
+  const form = document.getElementById('ai-intake-upload-form');
+  const overlay = document.getElementById('ai-upload-overlay');
+  const submitButton = document.getElementById('ai-intake-submit-button');
+  const messageNode = document.getElementById('ai-upload-overlay-message');
+  const percentNode = document.getElementById('ai-upload-overlay-percent');
+  const barNode = document.getElementById('ai-upload-overlay-bar');
+  if (!form || !overlay || !submitButton || !messageNode || !percentNode || !barNode) {
+    return;
+  }
+
+  const checkpoints = [
+    { percent: 12, message: 'Uploading file securely...' },
+    { percent: 28, message: 'Reading the invoice and detecting text...' },
+    { percent: 46, message: 'AI magic is extracting fields and values...' },
+    { percent: 68, message: 'Understanding totals, suppliers, and line items...' },
+    { percent: 86, message: 'Preparing your review workspace...' },
+    { percent: 94, message: 'Finalizing AI response...' },
+  ];
+  let stepIndex = 0;
+  let intervalId = null;
+
+  const applyCheckpoint = (checkpoint) => {
+    percentNode.textContent = `${checkpoint.percent}%`;
+    messageNode.textContent = checkpoint.message;
+    barNode.style.width = `${checkpoint.percent}%`;
+  };
+
+  form.addEventListener('submit', () => {
+    submitButton.disabled = true;
+    overlay.hidden = false;
+    applyCheckpoint(checkpoints[0]);
+    intervalId = window.setInterval(() => {
+      stepIndex = Math.min(stepIndex + 1, checkpoints.length - 1);
+      applyCheckpoint(checkpoints[stepIndex]);
+    }, 1200);
+  });
+
+  window.addEventListener('pageshow', () => {
+    if (intervalId) {
+      window.clearInterval(intervalId);
+    }
+  });
+})();
+</script>
+{% endblock %}

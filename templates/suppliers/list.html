@@ -1,0 +1,55 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Suppliers :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h3 mb-1">Suppliers</h1>
+        <p class="text-secondary mb-0">Vendor and procurement reference data.</p>
+    </div>
+    {% if request.user.is_staff %}
+    <a class="btn btn-primary" href="{% url 'suppliers:create' %}">Create</a>
+    {% endif %}
+</div>
+
+<section class="panel-card">
+    <div class="panel-card__body">
+        <form class="row g-2 mb-3" method="get">
+            <div class="col-sm-6 col-lg-4">
+                <input class="form-control" type="search" name="q" value="{{ search_query }}" placeholder="Search suppliers">
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-secondary" type="submit">Search</button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-sm align-middle admin-table">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Contact</th>
+                    <th>Email</th>
+                    <th>Location</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for object in objects %}
+                <tr>
+                    <td>{{ object.name }}</td>
+                    <td>{{ object.contact|default:"-" }}</td>
+                    <td>{{ object.email|default:"-" }}</td>
+                    <td>{% if object.city or object.country %}{{ object.city }} {{ object.country }}{% else %}-{% endif %}</td>
+                    <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{% url 'suppliers:detail' object.pk %}">View</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-secondary py-4">No suppliers found.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

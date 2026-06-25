@@ -1,0 +1,41 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{{ title }} :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="page-hero__row">
+        <div>
+            <p class="eyebrow mb-0">Asset Editor</p>
+            <h1 class="page-title">{{ title }}</h1>
+            <p class="page-subtitle">Capture hardware, ownership, procurement, and lifecycle fields in a cleaner enterprise editing workflow.</p>
+        </div>
+    </div>
+</section>
+
+<section class="form-card">
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-grid">
+            {% for field in form %}
+            <div class="{% if field.name == 'notes' %}form-grid__full{% endif %}">
+                <div class="field-shell">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                    <div class="field-error">{{ field.errors|join:", " }}</div>
+                    {% endif %}
+                    {% if field.help_text %}
+                    <div class="field-help">{{ field.help_text }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-primary" type="submit">Save asset</button>
+            <a class="btn btn-outline-secondary" href="{{ cancel_url }}">Cancel</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

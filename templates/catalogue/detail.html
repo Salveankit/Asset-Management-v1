@@ -1,0 +1,47 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{{ title }} :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="page-hero__row">
+        <div>
+            <p class="eyebrow mb-0">Configuration Detail</p>
+            <h1 class="page-title">{{ object }}</h1>
+            <p class="page-subtitle">{{ title }} record with structured metadata and safer operational actions.</p>
+        </div>
+        <div class="hero-actions">
+            {% if request.user.is_staff %}
+            <a class="btn btn-primary" href="{{ edit_url }}">Edit</a>
+            <form method="post" action="{{ delete_url }}">
+                {% csrf_token %}
+                <button class="btn btn-outline-secondary" type="submit">Archive</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<div class="detail-layout">
+    <section class="detail-card">
+        <h2 class="detail-section-title">Record attributes</h2>
+        <div class="detail-list">
+            {% for label, value in fields %}
+            <div class="detail-row">
+                <div class="detail-row__label">{{ label }}</div>
+                <div class="detail-row__value">{{ value }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <aside class="stack">
+        <section class="info-card">
+            <h2 class="detail-section-title">Navigation</h2>
+            <div class="action-cluster">
+                <a class="btn btn-outline-secondary" href="{{ back_url }}">Back to list</a>
+            </div>
+        </section>
+    </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Inventory Detail :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="page-hero__row">
+        <div>
+            <p class="eyebrow mb-0">Inventory Detail</p>
+            <h1 class="page-title">{{ object.name }}</h1>
+            <p class="page-subtitle">Stock health, sourcing context, and operational notes for this inventory record.</p>
+        </div>
+        {% if request.user.is_staff %}
+        <div class="hero-actions">
+            <a class="btn btn-primary" href="edit/">Edit</a>
+            <form method="post" action="delete/">{% csrf_token %}<button class="btn btn-outline-secondary" type="submit">Archive</button></form>
+        </div>
+        {% endif %}
+    </div>
+    <div class="hero-meta">
+        <div class="meta-chip"><i class="bi bi-building"></i><span>{{ object.company|default:"No company scope" }}</span></div>
+        <div class="meta-chip"><i class="bi bi-box-seam"></i><span>{{ object.available_quantity }} available</span></div>
+        <div class="meta-chip"><i class="bi bi-exclamation-triangle"></i><span>Minimum {{ object.min_quantity }}</span></div>
+    </div>
+</section>
+
+<div class="detail-layout">
+    <section class="detail-card">
+        <h2 class="detail-section-title">Record overview</h2>
+        <div class="detail-list">
+            <div class="detail-row"><div class="detail-row__label">Name</div><div class="detail-row__value">{{ object.name }}</div></div>
+            <div class="detail-row"><div class="detail-row__label">Company</div><div class="detail-row__value">{{ object.company|default:"-" }}</div></div>
+            <div class="detail-row"><div class="detail-row__label">Category</div><div class="detail-row__value">{{ object.category|default:"-" }}</div></div>
+            {% if object.supplier_id %}
+            <div class="detail-row"><div class="detail-row__label">Supplier</div><div class="detail-row__value">{{ object.supplier|default:"-" }}</div></div>
+            {% endif %}
+            {% if object.location_id %}
+            <div class="detail-row"><div class="detail-row__label">Location</div><div class="detail-row__value">{{ object.location|default:"-" }}</div></div>
+            {% endif %}
+            <div class="detail-row"><div class="detail-row__label">Notes</div><div class="detail-row__value">{{ object.notes|default:"-" }}</div></div>
+        </div>
+    </section>
+
+    <aside class="stack">
+        <section class="info-card">
+            <h2 class="detail-section-title">Stock posture</h2>
+            <div class="data-points">
+                <div class="data-point">
+                    <span class="data-point__label">Quantity</span>
+                    <div class="data-point__value">{{ object.quantity }}</div>
+                </div>
+                <div class="data-point">
+                    <span class="data-point__label">Available</span>
+                    <div class="data-point__value">{{ object.available_quantity }}</div>
+                </div>
+                <div class="data-point">
+                    <span class="data-point__label">Minimum</span>
+                    <div class="data-point__value">{{ object.min_quantity }}</div>
+                </div>
+                <div class="data-point">
+                    <span class="data-point__label">State</span>
+                    <div class="data-point__value">
+                        {% if object.available_quantity <= object.min_quantity %}
+                        Reorder attention required
+                        {% else %}
+                        Adequately stocked
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="info-card">
+            <h2 class="detail-section-title">Navigation</h2>
+            <div class="action-cluster">
+                <a class="btn btn-outline-secondary" href="javascript:history.back()">Back to list</a>
+            </div>
+        </section>
+    </aside>
+</div>
+{% endblock %}

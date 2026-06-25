@@ -1,0 +1,42 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Organisation Detail :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h3 mb-1">{{ object }}</h1>
+    </div>
+    {% if request.user.is_staff %}
+    <div class="d-flex gap-2">
+        {% if object.company_id %}
+        <a class="btn btn-primary" href="{% url 'organisations:department-edit' object.pk %}">Edit</a>
+        <form method="post" action="{% url 'organisations:department-delete' object.pk %}">{% csrf_token %}<button class="btn btn-outline-danger" type="submit">Archive</button></form>
+        {% else %}
+        <a class="btn btn-primary" href="{% url 'organisations:company-edit' object.pk %}">Edit</a>
+        <form method="post" action="{% url 'organisations:company-delete' object.pk %}">{% csrf_token %}<button class="btn btn-outline-danger" type="submit">Archive</button></form>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<section class="panel-card">
+    <div class="panel-card__body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9">{{ object.name }}</dd>
+            {% if object.company_id %}
+            <dt class="col-sm-3">Company</dt>
+            <dd class="col-sm-9">{{ object.company }}</dd>
+            {% else %}
+            <dt class="col-sm-3">Code</dt>
+            <dd class="col-sm-9">{{ object.code|default:"-" }}</dd>
+            <dt class="col-sm-3">Email Domain</dt>
+            <dd class="col-sm-9">{{ object.email_domain|default:"-" }}</dd>
+            {% endif %}
+            <dt class="col-sm-3">Notes</dt>
+            <dd class="col-sm-9">{{ object.notes|default:"-" }}</dd>
+        </dl>
+    </div>
+</section>
+{% endblock %}

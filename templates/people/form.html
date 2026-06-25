@@ -1,0 +1,29 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}People Form :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<section class="panel-card">
+    <div class="panel-card__body">
+        <form method="post" class="row g-3">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="col-12 {% if field.name == 'groups' or field.name == 'permissions' %}col-lg-12{% elif field.name == 'password' %}col-lg-6{% else %}col-lg-6{% endif %}">
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                <div class="text-danger small mt-1">{{ field.errors|join:", " }}</div>
+                {% endif %}
+                {% if field.help_text %}
+                <div class="text-secondary small mt-1">{{ field.help_text }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            <div class="col-12 d-flex gap-2">
+                <button class="btn btn-primary" type="submit">Save</button>
+                <a class="btn btn-outline-secondary" href="javascript:history.back()">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

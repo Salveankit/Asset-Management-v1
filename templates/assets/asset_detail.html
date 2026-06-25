@@ -1,0 +1,218 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{{ object.display_name }} :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="page-hero__row">
+        <div>
+            <p class="eyebrow mb-0">Asset Detail Workspace</p>
+            <h1 class="page-title">{{ object.display_name }}</h1>
+            <p class="page-subtitle">A single operational view for metadata, custody, lifecycle actions, attachments, and traceability.</p>
+        </div>
+        <div class="hero-actions">
+            {% if request.user.is_staff %}
+            <a class="btn btn-primary" href="{{ edit_url }}">Edit Asset</a>
+            <form method="post" action="{{ delete_url }}">
+                {% csrf_token %}
+                <button class="btn btn-outline-secondary" type="submit">Archive</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    <div class="hero-meta">
+        <div class="meta-chip"><i class="bi bi-upc-scan"></i><span>{{ object.asset_tag }}</span></div>
+        <div class="meta-chip"><i class="bi bi-briefcase"></i><span>{{ object.assignment_summary }}</span></div>
+        <div class="meta-chip"><i class="bi bi-geo-alt"></i><span>{{ object.default_location|default:"No default location" }}</span></div>
+    </div>
+</section>
+
+<div class="detail-layout">
+    <section class="stack">
+        <section class="detail-card">
+            <h2 class="detail-section-title">Core metadata</h2>
+            <div class="detail-list">
+                <div class="detail-row"><div class="detail-row__label">Asset Tag</div><div class="detail-row__value">{{ object.asset_tag }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Name</div><div class="detail-row__value">{{ object.name|default:"-" }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Serial</div><div class="detail-row__value">{{ object.serial|default:"-" }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Model</div><div class="detail-row__value">{{ object.model }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Manufacturer</div><div class="detail-row__value">{{ object.model.manufacturer|default:"-" }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Category</div><div class="detail-row__value">{{ object.model.category }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Status</div><div class="detail-row__value">{{ object.status_label }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Company</div><div class="detail-row__value">{{ object.company|default:"-" }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Assignment</div><div class="detail-row__value">{{ object.assignment_summary }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Custody State</div><div class="detail-row__value">{{ object.custody_state|title }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Checked Out At</div><div class="detail-row__value">{{ object.checked_out_at|default:"-" }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Expected Check-in</div><div class="detail-row__value">{{ object.expected_checkin|default:"-" }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Last Check-in</div><div class="detail-row__value">{{ object.last_checkin|default:"-" }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Default Location</div><div class="detail-row__value">{{ object.default_location|default:"-" }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Supplier</div><div class="detail-row__value">{{ object.supplier|default:"-" }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Purchase Date</div><div class="detail-row__value">{{ object.purchase_date|default:"-" }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Purchase Cost</div><div class="detail-row__value">{{ object.purchase_cost|default:"-" }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Order Number</div><div class="detail-row__value">{{ object.order_number|default:"-" }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Warranty Months</div><div class="detail-row__value">{{ object.warranty_months }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Requestable</div><div class="detail-row__value">{{ object.requestable|yesno:"Yes,No" }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Depreciation</div><div class="detail-row__value">{{ object.model.depreciation|default:"-" }}</div></div>
+                <div class="detail-row"><div class="detail-row__label">Notes</div><div class="detail-row__value">{{ object.notes|default:"-" }}</div></div>
+            </div>
+        </section>
+
+        <section class="detail-card">
+            <div class="section-heading">
+                <div>
+                    <h2 class="section-title">Activity</h2>
+                    <p class="section-copy">Audit trail and lifecycle history in one stream.</p>
+                </div>
+            </div>
+            <div class="timeline">
+                {% for log in object.audit_logs.all %}
+                <article class="timeline-item">
+                    <div class="timeline-item__title">{{ log.get_action_type_display }}</div>
+                    <div class="timeline-item__body">{{ log.message }}</div>
+                    <div class="timeline-item__meta">{{ log.created_at }}{% if log.actor %} • {{ log.actor }}{% endif %}</div>
+                </article>
+                {% empty %}
+                <div class="empty-state">
+                    <div class="empty-state__icon"><i class="bi bi-activity"></i></div>
+                    <div class="empty-state__title">No activity recorded yet</div>
+                    <p class="empty-state__copy">Audit activity will appear here once assignments, check-outs, or updates are performed.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <hr>
+
+            <h3 class="detail-section-title">Check-out history</h3>
+            <div class="timeline">
+                {% for event in object.checkout_events.all %}
+                <article class="timeline-item">
+                    <div class="timeline-item__title">{{ event.get_action_type_display }}{% if event.target_type != "none" %} to {{ event.get_target_type_display }}{% endif %}</div>
+                    <div class="timeline-item__meta">{{ event.created_at }}{% if event.actor %} • {{ event.actor }}{% endif %}{% if event.expected_checkin %} • expected {{ event.expected_checkin }}{% endif %}</div>
+                    {% if event.note %}
+                    <div class="timeline-item__body">{{ event.note }}</div>
+                    {% endif %}
+                </article>
+                {% empty %}
+                <div class="empty-state">
+                    <div class="empty-state__icon"><i class="bi bi-arrow-left-right"></i></div>
+                    <div class="empty-state__title">No check-out history yet</div>
+                    <p class="empty-state__copy">Lifecycle events will accumulate here as this asset moves through custody workflows.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </section>
+
+    <aside class="stack">
+        <section class="info-card">
+            <h2 class="detail-section-title">Lifecycle posture</h2>
+            <div class="data-points">
+                <div class="data-point">
+                    <span class="data-point__label">Status</span>
+                    <div class="data-point__value">{{ object.status_label }}</div>
+                </div>
+                <div class="data-point">
+                    <span class="data-point__label">Custody</span>
+                    <div class="data-point__value">{{ object.custody_state|title }}</div>
+                </div>
+                <div class="data-point">
+                    <span class="data-point__label">Assignment</span>
+                    <div class="data-point__value">{{ object.assignment_summary }}</div>
+                </div>
+                <div class="data-point">
+                    <span class="data-point__label">Location</span>
+                    <div class="data-point__value">{{ object.default_location|default:"-" }}</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="info-card">
+            <h2 class="detail-section-title">Lifecycle actions</h2>
+            {% if request.user.is_staff %}
+            <div class="stack">
+                <form method="post" action="{{ assignment_url }}" class="form-grid">
+                    {% csrf_token %}
+                    <div class="field-shell">{{ assignment_form.target_type }}</div>
+                    <div class="field-shell">{{ assignment_form.assigned_user }}</div>
+                    <div class="field-shell">{{ assignment_form.assigned_location }}</div>
+                    <div class="field-shell">{{ assignment_form.assigned_asset }}</div>
+                    <div class="field-shell form-grid__full">{{ assignment_form.note }}</div>
+                    <div class="form-grid__full">
+                        <button class="btn btn-outline-secondary btn-sm" type="submit">Assign</button>
+                    </div>
+                </form>
+
+                <form method="post" action="{{ checkout_url }}" class="form-grid">
+                    {% csrf_token %}
+                    <div class="field-shell">{{ checkout_form.target_type }}</div>
+                    <div class="field-shell">{{ checkout_form.assigned_user }}</div>
+                    <div class="field-shell">{{ checkout_form.assigned_location }}</div>
+                    <div class="field-shell">{{ checkout_form.assigned_asset }}</div>
+                    <div class="field-shell">{{ checkout_form.expected_checkin }}</div>
+                    <div class="field-shell form-grid__full">{{ checkout_form.note }}</div>
+                    <div class="form-grid__full">
+                        <button class="btn btn-primary btn-sm" type="submit">Check Out</button>
+                    </div>
+                </form>
+
+                <div class="action-cluster">
+                    <form method="post" action="{{ clear_assignment_url }}">
+                        {% csrf_token %}
+                        <input type="hidden" name="note" value="Assignment cleared from asset detail.">
+                        <button class="btn btn-sm btn-outline-secondary" type="submit">Clear Assignment</button>
+                    </form>
+                    <form method="post" action="{{ checkin_url }}">
+                        {% csrf_token %}
+                        <input type="hidden" name="note" value="Checked in from asset detail.">
+                        <button class="btn btn-sm btn-outline-secondary" type="submit">Check In</button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <p class="muted-copy mb-0">Lifecycle actions require staff access.</p>
+            {% endif %}
+        </section>
+
+        <section class="info-card">
+            <div class="section-heading">
+                <div>
+                    <h2 class="section-title">Attachments</h2>
+                    <p class="section-copy">Operational evidence and supporting files.</p>
+                </div>
+            </div>
+            {% if request.user.is_staff %}
+            <form method="post" enctype="multipart/form-data" action="{{ attachment_create_url }}" class="stack mb-3">
+                {% csrf_token %}
+                <div class="field-shell">{{ attachment_form.file }}</div>
+                <div class="field-shell">{{ attachment_form.notes }}</div>
+                <div><button class="btn btn-primary btn-sm" type="submit">Upload</button></div>
+            </form>
+            {% endif %}
+            <div class="timeline">
+                {% for attachment in object.attachments.all %}
+                <article class="timeline-item">
+                    <div class="timeline-item__title">{{ attachment.original_filename }}</div>
+                    <div class="timeline-item__meta">{{ attachment.size_bytes }} bytes{% if attachment.notes %} • {{ attachment.notes }}{% endif %}</div>
+                    <div class="timeline-item__body">
+                        <a class="record-link" href="{% url 'files:attachment-download' attachment.pk %}">Download attachment</a>
+                    </div>
+                </article>
+                {% empty %}
+                <div class="empty-state">
+                    <div class="empty-state__icon"><i class="bi bi-paperclip"></i></div>
+                    <div class="empty-state__title">No attachments yet</div>
+                    <p class="empty-state__copy">Upload invoices, handover records, or operational proofs to build a richer asset history.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="info-card">
+            <h2 class="detail-section-title">Navigation</h2>
+            <div class="action-cluster">
+                <a class="btn btn-outline-secondary" href="{{ back_url }}">Back to list</a>
+            </div>
+        </section>
+    </aside>
+</div>
+{% endblock %}

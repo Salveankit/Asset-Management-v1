@@ -1,0 +1,89 @@
+{% extends "layouts/base.html" %}
+{% load core_tags %}
+
+{% block title %}{{ title }} :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="page-hero__row">
+        <div>
+            <p class="eyebrow mb-0">Configuration Library</p>
+            <h1 class="page-title">{{ title }}</h1>
+            <p class="page-subtitle">Master data should be easy to scan and govern. These records are presented as structured cards rather than flat admin rows.</p>
+        </div>
+        {% if request.user.is_staff %}
+        <div class="hero-actions">
+            <a class="btn btn-primary" href="{{ create_url }}">Create Record</a>
+        </div>
+        {% endif %}
+    </div>
+    <div class="hero-meta">
+        <div class="meta-chip"><i class="bi bi-layers"></i><span>{{ objects|length }} visible record{{ objects|length|pluralize }}</span></div>
+        <div class="meta-chip"><i class="bi bi-sliders"></i><span>Configuration-grade governance</span></div>
+    </div>
+</section>
+
+<section class="toolbar-card">
+    <form class="toolbar-grid toolbar-grid--compact" method="get">
+        <div class="toolbar-field">
+            <label for="catalogue-search">Search</label>
+            <input id="catalogue-search" class="form-control" type="search" name="q" value="{{ search_query }}" placeholder="Search {{ title|lower }}">
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-primary" type="submit">Apply Search</button>
+        </div>
+    </form>
+</section>
+
+{% if objects %}
+<div class="record-grid">
+    {% for object in objects %}
+    <article class="record-card">
+        <div class="record-card__header">
+            <div>
+                <h3 class="record-card__title">{{ object }}</h3>
+                <div class="record-card__subtitle">{{ title }} record</div>
+            </div>
+            <span class="status-pill status-pill--neutral">Config</span>
+        </div>
+        <div class="record-card__body">
+            <div class="data-points">
+                {% for heading, field in columns %}
+                <div class="data-point">
+                    <span class="data-point__label">{{ heading }}</span>
+                    <div class="data-point__value">
+                        {% if field == "category_type" %}
+                            {{ object.get_category_type_display }}
+                        {% elif field == "status_type" %}
+                            {{ object.status_type|title }}
+                        {% elif field == "require_acceptance" %}
+                            {{ object.require_acceptance|yesno:"Yes,No" }}
+                        {% elif field == "checkin_email" %}
+                            {{ object.checkin_email|yesno:"Yes,No" }}
+                        {% elif field == "show_in_nav" %}
+                            {{ object.show_in_nav|yesno:"Yes,No" }}
+                        {% elif field == "default_label" %}
+                            {{ object.default_label|yesno:"Yes,No" }}
+                        {% else %}
+                            {{ object|attr:field|default:"-" }}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="record-card__footer">
+            <span class="record-card__meta">Structured for administrative clarity.</span>
+            <a class="record-link" href="{% url detail_route object.pk %}">Open record</a>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-state__icon"><i class="bi bi-collection"></i></div>
+    <div class="empty-state__title">No records found</div>
+    <p class="empty-state__copy">Create a master-data entry to establish the configuration baseline for this area of the platform.</p>
+</div>
+{% endif %}
+{% endblock %}

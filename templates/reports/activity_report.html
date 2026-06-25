@@ -1,0 +1,25 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Activity Report :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <h1 class="h3 mb-1">Activity Report</h1>
+    <p class="text-secondary mb-0">Latest asset-related audit entries.</p>
+</div>
+<section class="panel-card">
+    <div class="panel-card__body">
+        <ul class="list-group list-group-flush">
+            {% for object in objects %}
+            <li class="list-group-item px-0">
+                <div class="fw-semibold">{{ object.get_action_type_display }}{% if object.asset %} · {{ object.asset.display_name }}{% endif %}</div>
+                <div>{{ object.message }}</div>
+                <div class="small text-secondary">{{ object.created_at }}{% if object.actor %} · {{ object.actor }}{% endif %}</div>
+            </li>
+            {% empty %}
+            <li class="list-group-item px-0 text-secondary">No activity available.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Dashboard :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="page-hero__row">
+        <div>
+            <p class="eyebrow mb-0">Operations Overview</p>
+            <h1 class="page-title">Asset command center</h1>
+            <p class="page-subtitle">A clearer enterprise workspace for inventory, licence posture, intake throughput, and operational traceability across the organisation.</p>
+        </div>
+        <div class="hero-actions">
+            <a class="btn btn-primary" href="{% url 'assets:create' %}">Create Asset</a>
+            <a class="btn btn-outline-secondary" href="{% url 'ai_intake:list' %}">Review Intake</a>
+        </div>
+    </div>
+    <div class="hero-meta">
+        <div class="meta-chip"><i class="bi bi-shield-check"></i><span>Live operational data</span></div>
+        <div class="meta-chip"><i class="bi bi-diagram-3"></i><span>Custody and lifecycle visibility</span></div>
+        <div class="meta-chip"><i class="bi bi-clipboard2-data"></i><span>Actionable reporting baseline</span></div>
+    </div>
+</section>
+
+<section class="stats-grid">
+    {% for metric in metrics %}
+    <div class="metric-card {% cycle 'metric-card--teal' 'metric-card--blue' 'metric-card--violet' 'metric-card--amber' 'metric-card--slate' 'metric-card--rose' %}">
+        <div class="metric-card__label">{{ metric.label }}</div>
+        <div class="metric-card__value">{{ metric.value }}</div>
+        <div class="metric-card__meta">Tracked across the active company scope.</div>
+    </div>
+    {% endfor %}
+</section>
+
+<div class="detail-layout">
+    <section class="workspace-card">
+        <div class="section-heading">
+            <div>
+                <h2 class="section-title">Platform posture</h2>
+                <p class="section-copy">This workspace is set up for controlled asset operations rather than raw administrative maintenance.</p>
+            </div>
+        </div>
+        <div class="stack">
+            <div class="data-point">
+                <span class="data-point__label">Operational focus</span>
+                <div class="data-point__value">Intake, assignment, custody, and auditability are now presented as first-class workflows.</div>
+            </div>
+            <div class="data-point">
+                <span class="data-point__label">Design direction</span>
+                <div class="data-point__value">The interface now prioritises hierarchy, glanceable metrics, and card-based decision support instead of flat CRUD tables.</div>
+            </div>
+            <div class="data-point">
+                <span class="data-point__label">Next step</span>
+                <div class="data-point__value">Use the navigation rail to manage stock, people, suppliers, and reports through the same visual system.</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="workspace-card">
+        <div class="section-heading">
+            <div>
+                <h2 class="section-title">Recent activity</h2>
+                <p class="section-copy">Operational movement, custody updates, and audit events.</p>
+            </div>
+            <a class="btn btn-sm btn-outline-secondary" href="{% url 'reports:activity-report' %}">View Report</a>
+        </div>
+        <div class="timeline">
+            {% for log in recent_activity %}
+            <article class="timeline-item">
+                <div class="timeline-item__title">{{ log.get_action_type_display }}{% if log.asset %} · {{ log.asset.display_name }}{% endif %}</div>
+                <div class="timeline-item__body">{{ log.message }}</div>
+                <div class="timeline-item__meta">{{ log.created_at }}{% if log.actor %} · {{ log.actor }}{% endif %}</div>
+            </article>
+            {% empty %}
+            <div class="empty-state">
+                <div class="empty-state__icon"><i class="bi bi-clock-history"></i></div>
+                <div class="empty-state__title">No activity yet</div>
+                <p class="empty-state__copy">Once users start creating, assigning, checking out, or importing records, the operational timeline will surface those events here.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

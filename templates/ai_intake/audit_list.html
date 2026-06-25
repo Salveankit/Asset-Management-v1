@@ -1,0 +1,40 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}AI Intake Audit :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <h1 class="h3 mb-1">AI Intake Audit</h1>
+    <p class="text-secondary mb-0">Provider, review, and correction activity for AI-assisted intake.</p>
+</div>
+<section class="panel-card">
+    <div class="panel-card__body">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle admin-table">
+                <thead>
+                <tr>
+                    <th>Event</th>
+                    <th>Status</th>
+                    <th>Latency</th>
+                    <th>Actor</th>
+                    <th>Created</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for object in objects %}
+                <tr>
+                    <td>{{ object.get_event_type_display }}</td>
+                    <td>{{ object.status|default:"-" }}</td>
+                    <td>{{ object.latency_ms|default:"-" }}</td>
+                    <td>{{ object.actor|default:"-" }}</td>
+                    <td>{{ object.created_at }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-secondary py-4">No audit events found.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

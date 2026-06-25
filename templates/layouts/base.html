@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ product_name }}{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body class="app-shell {% if request.user.is_authenticated %}app-shell--authed{% else %}app-shell--guest{% endif %}">
+{% if request.user.is_authenticated %}
+    {% with current_namespace=request.resolver_match.namespace|default:'' current_url_name=request.resolver_match.url_name|default:'' %}
+    <div class="app-frame">
+        <aside class="app-sidebar">
+            <div class="brand-panel">
+                <div class="brand-mark">{{ product_short_name|slice:":2"|upper }}</div>
+                <div>
+                    <p class="eyebrow mb-1">Asset Control</p>
+                    <h1 class="brand-title mb-1">{{ product_name }}</h1>
+                    <p class="brand-subtitle mb-0">{{ company_name }}</p>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <p class="sidebar-section__label">Workspace</p>
+                <nav class="nav-stack">
+                    <a class="nav-link {% if current_url_name == 'dashboard' %}is-active{% endif %}" href="{% url 'dashboard' %}">
+                        <i class="bi bi-grid-1x2-fill"></i><span>Overview</span>
+                    </a>
+                    <a class="nav-link {% if current_namespace == 'ai_intake' %}is-active{% endif %}" href="{% url 'ai_intake:list' %}">
+                        <i class="bi bi-stars"></i><span>AI Intake</span>
+                    </a>
+                    <a class="nav-link {% if current_namespace == 'reports' %}is-active{% endif %}" href="{% url 'reports:asset-report' %}">
+                        <i class="bi bi-bar-chart-line-fill"></i><span>Reports</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="sidebar-section">
+                <p class="sidebar-section__label">Inventory</p>
+                <nav class="nav-stack">
+                    <a class="nav-link {% if current_namespace == 'assets' and current_url_name != 'model-list' and current_url_name != 'depreciation-list' %}is-active{% endif %}" href="{% url 'assets:list' %}">
+                        <i class="bi bi-laptop"></i><span>Assets</span>
+                    </a>
+                    <a class="nav-link {% if current_namespace == 'licences' %}is-active{% endif %}" href="{% url 'licences:list' %}">
+                        <i class="bi bi-key-fill"></i><span>Licences</span>
+                    </a>
+                    <a class="nav-link {% if current_namespace == 'accessories' %}is-active{% endif %}" href="{% url 'accessories:list' %}">
+                        <i class="bi bi-headset-vr"></i><span>Accessories</span>
+                    </a>
+                    <a class="nav-link {% if current_namespace == 'components' %}is-active{% endif %}" href="{% url 'components:list' %}">
+                        <i class="bi bi-cpu-fill"></i><span>Components</span>
+                    </a>
+                    <a class="nav-link {% if current_namespace == 'consumables' %}is-active{% endif %}" href="{% url 'consumables:list' %}">
+                        <i class="bi bi-box-seam"></i><span>Consumables</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="sidebar-section">
+                <p class="sidebar-section__label">Configuration</p>
+                <nav class="nav-stack">
+                    <a class="nav-link {% if current_namespace == 'catalogue' %}is-active{% endif %}" href="{% url 'catalogue:category-list' %}">
+                        <i class="bi bi-collection-fill"></i><span>Catalogue</span>
+                    </a>
+                    <a class="nav-link {% if current_namespace == 'locations' %}is-active{% endif %}" href="{% url 'locations:list' %}">
+                        <i class="bi bi-geo-alt-fill"></i><span>Locations</span>
+                    </a>
+                    <a class="nav-link {% if current_namespace == 'organisations' %}is-active{% endif %}" href="{% url 'organisations:company-list' %}">
+                        <i class="bi bi-buildings-fill"></i><span>Organisation</span>
+                    </a>
+                    <a class="nav-link {% if current_namespace == 'people' %}is-active{% endif %}" href="{% url 'people:user-list' %}">
+                        <i class="bi bi-people-fill"></i><span>People</span>
+                    </a>
+                    <a class="nav-link {% if current_namespace == 'suppliers' %}is-active{% endif %}" href="{% url 'suppliers:list' %}">
+                        <i class="bi bi-truck-flatbed"></i><span>Suppliers</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="sidebar-foot">
+                <div class="sidebar-foot__card">
+                    <p class="sidebar-foot__title mb-1">Operational posture</p>
+                    <p class="sidebar-foot__text mb-0">Purpose-built for asset visibility, intake, custody, and lifecycle control.</p>
+                </div>
+            </div>
+        </aside>
+
+        <main class="app-main">
+            <header class="topbar">
+                <div class="topbar__content">
+                    <div>
+                        <p class="eyebrow mb-1">Enterprise Asset Workspace</p>
+                        <div class="topbar__title">Operational system of record</div>
+                    </div>
+                    <div class="topbar__actions">
+                        <div class="user-pill">
+                            <span class="user-pill__icon"><i class="bi bi-person-circle"></i></span>
+                            <div>
+                                <div class="user-pill__name">{{ request.user }}</div>
+                                <div class="user-pill__meta">Authenticated session</div>
+                            </div>
+                        </div>
+                        <form method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button class="btn btn-ghost" type="submit">Logout</button>
+                        </form>
+                    </div>
+                </div>
+            </header>
+
+            <section class="content-shell">
+    {% endwith %}
+{% else %}
+    <main class="guest-shell">
+        <div class="guest-shell__content">
+{% endif %}
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert app-alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            {% block content %}{% endblock %}
+{% if request.user.is_authenticated %}
+            </section>
+        </main>
+    </div>
+{% else %}
+        </div>
+    </main>
+{% endif %}
+</body>
+</html>

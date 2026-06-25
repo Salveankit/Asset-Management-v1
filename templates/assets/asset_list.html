@@ -1,0 +1,140 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Assets :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="page-hero__row">
+        <div>
+            <p class="eyebrow mb-0">Asset Registry</p>
+            <h1 class="page-title">Assets</h1>
+            <p class="page-subtitle">A production-grade system-of-record view with richer hierarchy, clearer custody signals, and actionable summaries instead of a plain asset table.</p>
+        </div>
+        {% if request.user.is_staff %}
+        <div class="hero-actions">
+            <a class="btn btn-primary" href="{% url 'assets:create' %}">Create Asset</a>
+        </div>
+        {% endif %}
+    </div>
+    <div class="hero-meta">
+        <div class="meta-chip"><i class="bi bi-pc-display"></i><span>{{ objects|length }} visible asset{{ objects|length|pluralize }}</span></div>
+        <div class="meta-chip"><i class="bi bi-person-badge"></i><span>Custody-aware presentation</span></div>
+        <div class="meta-chip"><i class="bi bi-funnel"></i><span>Filtered operational view</span></div>
+    </div>
+</section>
+
+<section class="toolbar-card">
+    <form class="toolbar-grid" method="get">
+        <div class="toolbar-field">
+            <label for="asset-search">Search assets</label>
+            <input id="asset-search" class="form-control" type="search" name="q" value="{{ search_query }}" placeholder="Asset tag, name, serial, assignment">
+        </div>
+        <div class="toolbar-field">
+            <label for="asset-status">Status</label>
+            <select id="asset-status" class="form-select" name="status">
+                <option value="">All statuses</option>
+                {% for status in statuses %}
+                <option value="{{ status.pk }}" {% if selected_status == status.pk|stringformat:"s" %}selected{% endif %}>{{ status.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="toolbar-field">
+            <label for="asset-model">Model</label>
+            <select id="asset-model" class="form-select" name="model">
+                <option value="">All models</option>
+                {% for model in models %}
+                <option value="{{ model.pk }}" {% if selected_model == model.pk|stringformat:"s" %}selected{% endif %}>{{ model }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="toolbar-field">
+            <label for="asset-sort">Sort</label>
+            <select id="asset-sort" class="form-select" name="sort">
+                <option value="asset_tag" {% if selected_sort == "asset_tag" %}selected{% endif %}>Asset Tag A-Z</option>
+                <option value="-asset_tag" {% if selected_sort == "-asset_tag" %}selected{% endif %}>Asset Tag Z-A</option>
+                <option value="name" {% if selected_sort == "name" %}selected{% endif %}>Name A-Z</option>
+                <option value="-created_at" {% if selected_sort == "-created_at" %}selected{% endif %}>Newest</option>
+            </select>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-primary" type="submit">Apply Filters</button>
+        </div>
+    </form>
+</section>
+
+{% if objects %}
+<section>
+    <div class="section-heading">
+        <div>
+            <h2 class="section-title">Asset portfolio</h2>
+            <p class="section-copy">Each asset is represented as a decision-ready card with status, assignment, and physical context.</p>
+        </div>
+    </div>
+
+    <div class="record-grid">
+        {% for object in objects %}
+        <article class="record-card">
+            <div class="record-card__header">
+                <div>
+                    <div class="status-pill status-pill--neutral mb-2">{{ object.asset_tag }}</div>
+                    <h3 class="record-card__title">{{ object.name|default:object.model }}</h3>
+                    <div class="record-card__subtitle">{{ object.model }}</div>
+                </div>
+                {% if object.custody_state == "checked_out" %}
+                <span class="status-pill status-pill--warning">{{ object.status_label }}</span>
+                {% elif object.custody_state == "assigned" %}
+                <span class="status-pill status-pill--success">{{ object.status_label }}</span>
+                {% else %}
+                <span class="status-pill status-pill--neutral">{{ object.status_label }}</span>
+                {% endif %}
+            </div>
+            <div class="record-card__body">
+                <div class="data-points">
+                    <div class="data-point">
+                        <span class="data-point__label">Custody</span>
+                        <div class="data-point__value">{{ object.custody_state|title }}</div>
+                    </div>
+                    <div class="data-point">
+                        <span class="data-point__label">Assignment</span>
+                        <div class="data-point__value">{{ object.assignment_summary }}</div>
+                    </div>
+                    <div class="data-point">
+                        <span class="data-point__label">Location</span>
+                        <div class="data-point__value">{{ object.default_location|default:"-" }}</div>
+                    </div>
+                    <div class="data-point">
+                        <span class="data-point__label">Portfolio status</span>
+                        <div class="data-point__value">{{ object.status_label }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="record-card__footer">
+                <span class="record-card__meta">Open the detail workspace for lifecycle actions, attachments, and history.</span>
+                <a class="record-link" href="{% url 'assets:detail' object.pk %}">Open asset</a>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+    <nav class="mt-4">
+        <ul class="pagination mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&status={{ selected_status }}&model={{ selected_model }}&sort={{ selected_sort }}">Previous</a></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&status={{ selected_status }}&model={{ selected_model }}&sort={{ selected_sort }}">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</section>
+{% else %}
+<div class="empty-state">
+    <div class="empty-state__icon"><i class="bi bi-pc-display-horizontal"></i></div>
+    <div class="empty-state__title">No assets found</div>
+    <p class="empty-state__copy">Start the registry with the first hardware record or widen the filters to recover the operational view.</p>
+</div>
+{% endif %}
+{% endblock %}

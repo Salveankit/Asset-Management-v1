@@ -1,0 +1,9 @@
+Django==5.2.15
+ djangorestframework==3.16.1
+ psycopg[binary]==3.2.13
+ celery==5.5.3
+ redis==6.2.0
+ django-environ==0.12.1
+ openai==1.108.1
+ pydantic==2.13.4
+pypdf==6.14.2

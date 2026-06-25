@@ -1,0 +1,56 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Users :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h3 mb-1">Users</h1>
+        <p class="text-secondary mb-0">People, role membership, and company-aware visibility.</p>
+    </div>
+    {% if request.user.is_staff %}
+    <a class="btn btn-primary" href="{% url 'people:user-create' %}">Create</a>
+    {% endif %}
+</div>
+
+<section class="panel-card">
+    <div class="panel-card__body">
+        <form class="row g-2 mb-3" method="get">
+            <div class="col-sm-6 col-lg-4">
+                <input class="form-control" type="search" name="q" value="{{ search_query }}" placeholder="Search users">
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-secondary" type="submit">Search</button>
+            </div>
+        </form>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle admin-table">
+                <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>Company</th>
+                    <th>Department</th>
+                    <th>Role</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for object in objects %}
+                <tr>
+                    <td>{{ object.username }}</td>
+                    <td>{{ object.display_name|default:"-" }}</td>
+                    <td>{{ object.company|default:"-" }}</td>
+                    <td>{{ object.department|default:"-" }}</td>
+                    <td>{% if object.is_staff %}Staff{% else %}User{% endif %}</td>
+                    <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{% url 'people:user-detail' object.pk %}">View</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-secondary py-4">No users found.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

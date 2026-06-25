@@ -1,0 +1,102 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{{ title }} :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="page-hero__row">
+        <div>
+            <p class="eyebrow mb-0">Inventory Workspace</p>
+            <h1 class="page-title">{{ title }}</h1>
+            <p class="page-subtitle">{{ subtitle }}</p>
+        </div>
+        {% if request.user.is_staff %}
+        <div class="hero-actions">
+            <a class="btn btn-primary" href="{{ create_url }}">Create Record</a>
+        </div>
+        {% endif %}
+    </div>
+    <div class="hero-meta">
+        <div class="meta-chip"><i class="bi bi-boxes"></i><span>{{ objects|length }} visible item{{ objects|length|pluralize }}</span></div>
+        <div class="meta-chip"><i class="bi bi-arrow-repeat"></i><span>Glanceable stock posture</span></div>
+        <div class="meta-chip"><i class="bi bi-sliders2"></i><span>Action-ready inventory controls</span></div>
+    </div>
+</section>
+
+<section class="toolbar-card">
+    <form class="toolbar-grid toolbar-grid--compact" method="get">
+        <div class="toolbar-field">
+            <label for="inventory-search">Search</label>
+            <input id="inventory-search" class="form-control" type="search" name="q" value="{{ search_query }}" placeholder="Search {{ title|lower }}">
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-primary" type="submit">Apply Search</button>
+        </div>
+    </form>
+</section>
+
+<section>
+    <div class="section-heading">
+        <div>
+            <h2 class="section-title">Inventory snapshot</h2>
+            <p class="section-copy">Every record is surfaced as a summary card so teams can scan stock posture faster than a flat table.</p>
+        </div>
+    </div>
+
+    {% if objects %}
+    <div class="record-grid">
+        {% for object in objects %}
+        <article class="record-card">
+            <div class="record-card__header">
+                <div>
+                    <h3 class="record-card__title">{{ object.name }}</h3>
+                    <div class="record-card__subtitle">{{ object.company|default:"No company scope" }}</div>
+                </div>
+                {% if object.available_quantity <= object.min_quantity %}
+                <span class="status-pill status-pill--warning">Needs restock</span>
+                {% else %}
+                <span class="status-pill status-pill--success">Healthy stock</span>
+                {% endif %}
+            </div>
+            <div class="record-card__body">
+                <div class="data-points">
+                    <div class="data-point">
+                        <span class="data-point__label">Quantity</span>
+                        <div class="data-point__value">{{ object.quantity }}</div>
+                    </div>
+                    <div class="data-point">
+                        <span class="data-point__label">Available</span>
+                        <div class="data-point__value">{{ object.available_quantity }}</div>
+                    </div>
+                    <div class="data-point">
+                        <span class="data-point__label">Minimum</span>
+                        <div class="data-point__value">{{ object.min_quantity }}</div>
+                    </div>
+                    <div class="data-point">
+                        <span class="data-point__label">Coverage</span>
+                        <div class="data-point__value">
+                            {% if object.available_quantity <= object.min_quantity %}
+                            At or below threshold
+                            {% else %}
+                            Above threshold
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="record-card__footer">
+                <span class="record-card__meta">Detail view includes supplier, location, and notes.</span>
+                <a class="record-link" href="{% url detail_route object.pk %}">Open record</a>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state__icon"><i class="bi bi-inboxes"></i></div>
+        <div class="empty-state__title">No records found</div>
+        <p class="empty-state__copy">Try a broader search, or create the first inventory record to establish baseline stock tracking.</p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

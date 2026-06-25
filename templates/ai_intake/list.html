@@ -1,0 +1,66 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}AI Intake :: {{ product_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h3 mb-1">AI Intake</h1>
+        <p class="text-secondary mb-0">Upload invoices or images for review-required draft extraction.</p>
+        {% if processing_count %}
+        <p class="text-secondary small mt-2 mb-0">{{ processing_count }} intake document{{ processing_count|pluralize }} currently processing in the background.</p>
+        {% endif %}
+    </div>
+    {% if request.user.is_staff %}
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'ai_intake:audit-list' %}">AI Audit</a>
+        <a class="btn btn-primary" href="{% url 'ai_intake:upload' %}">Upload</a>
+    </div>
+    {% endif %}
+</div>
+<section class="panel-card">
+    <div class="panel-card__body">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle admin-table">
+                <thead>
+                <tr>
+                    <th>Document</th>
+                    <th>Status</th>
+                    <th>Uploaded By</th>
+                    <th>Created</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for object in objects %}
+                <tr>
+                    <td>{{ object.original_filename }}</td>
+                    <td>
+                        <span class="status-pill {% if object.status == 'review' or object.status == 'completed' %}status-pill--success{% elif object.status == 'processing' or object.status == 'uploaded' %}status-pill--warning{% elif object.status == 'failed' %}status-pill--danger{% else %}status-pill--neutral{% endif %}">{{ object.get_status_display }}</span>
+                        {% if object.status == 'processing' or object.status == 'uploaded' %}
+                        <div class="small text-secondary mt-1">AI extraction is running in the background.</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ object.uploaded_by|default:"-" }}</td>
+                    <td>{{ object.created_at }}</td>
+                    <td class="text-end">
+                        <div class="d-inline-flex gap-2">
+                            <a class="btn btn-sm btn-outline-secondary" href="{% url 'ai_intake:detail' object.pk %}">View</a>
+                            {% if request.user.is_staff %}
+                            <form method="post" action="{% url 'ai_intake:delete' object.pk %}" onsubmit="return confirm('Delete this uploaded file and all extracted AI intake data?');">
+                                {% csrf_token %}
+                                <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-secondary py-4">No intake documents found.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}
