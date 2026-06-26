@@ -68,5 +68,8 @@ Examples:
 .\dev.ps1 test ai_intake
 ```
 
+## Production Storage Note
+
+On Vercel, uploaded documents are stored in the runtime temp filesystem at /tmp/media. That is enough for the current upload and review flow, but it is not durable storage across redeploys or cold starts. If you need permanent document retention, connect a real object store later.
 
 

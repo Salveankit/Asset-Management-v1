@@ -1,4 +1,5 @@
 import os
+import tempfile
 from pathlib import Path
 
 import environ
@@ -144,7 +145,19 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = Path(tempfile.gettempdir()) / 'media' if env.bool("VERCEL", default=False) else BASE_DIR / 'media'
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        'OPTIONS': {
+            'location': str(MEDIA_ROOT),
+        },
+    },
+    'staticfiles': {
+        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    },
+}
 
 if env.bool("VERCEL", default=False):
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -177,6 +190,10 @@ AZURE_OPENAI = {
     'timeout_seconds': env("AZURE_OPENAI_TIMEOUT_SECONDS"),
     'max_retries': env("AZURE_OPENAI_MAX_RETRIES"),
 }
+
+
+
+
 
 
 
