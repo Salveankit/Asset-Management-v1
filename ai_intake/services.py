@@ -28,7 +28,7 @@ from .policy import (
     normalize_invoice_extraction,
     summarize_invoice_reconciliation,
 )
-from .provider import AIProviderError, AIProviderNotConfiguredError, AIProviderSchemaError, AzureOpenAIIntakeClient
+from .provider import AIProviderError, AIProviderNotConfiguredError, AIProviderSchemaError, AzureOpenAIIntakeClient, get_intake_provider
 from .schemas import InvoiceIntakeExtraction, InvoiceLineItemClassification, InvoiceLineItemExtraction
 
 
@@ -316,7 +316,7 @@ def _validate_line_item_classification(
 
 @transaction.atomic
 def process_document_line_items(*, document: AIIntakeDocument, actor=None, provider: AzureOpenAIIntakeClient | None = None) -> AIIntakeJob:
-    provider = provider or AzureOpenAIIntakeClient()
+    provider = provider or get_intake_provider()
     review_company = getattr(actor, "company", None) if actor is not None else None
     document.status = AIIntakeDocument.Status.PROCESSING
     document.save(update_fields=["status", "updated_at"])
@@ -575,7 +575,7 @@ def process_document_line_items(*, document: AIIntakeDocument, actor=None, provi
 
 
 def process_document(*, document: AIIntakeDocument, actor=None, provider: AzureOpenAIIntakeClient | None = None) -> AIIntakeJob:
-    provider = provider or AzureOpenAIIntakeClient()
+    provider = provider or get_intake_provider()
     document.status = AIIntakeDocument.Status.PROCESSING
     document.save(update_fields=["status", "updated_at"])
     job = AIIntakeJob.objects.create(document=document, status=AIIntakeJob.Status.RUNNING)

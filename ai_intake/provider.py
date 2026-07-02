@@ -615,3 +615,139 @@ class AzureOpenAIIntakeClient:
             }
             line_item_classifications.append(InvoiceLineItemClassification.model_validate(raw_payload))
         return line_item_classifications
+
+
+class GeminiIntakeClient(AzureOpenAIIntakeClient):
+    """Gemini-backed document extraction with the existing intake schema contract."""
+
+    def __init__(self) -> None:
+        self.config = settings.GEMINI
+
+    def is_configured(self) -> bool:
+        return bool(self.config.get("api_key") and self.config.get("model"))
+
+    def _client(self):
+        if not self.is_configured():
+            raise AIProviderNotConfiguredError("Gemini is not configured. Add GEMINI_API_KEY to .env.local.")
+        try:
+            from google import genai
+        except ImportError as exc:
+            raise AIProviderError("Gemini support requires the google-genai package.") from exc
+        return genai.Client(
+            api_key=self.config["api_key"],
+            http_options={"timeout": int(self.config["timeout_seconds"]) * 1000},
+        )
+
+    @staticmethod
+    def _dump_gemini_response(response) -> dict:
+        if hasattr(response, "model_dump"):
+            return response.model_dump(mode="json", exclude_none=True)
+        return {}
+
+    @staticmethod
+    def _gemini_request_id(response) -> str:
+        sdk_response = getattr(response, "sdk_http_response", None)
+        headers = getattr(sdk_response, "headers", None) or {}
+        return headers.get("x-request-id", "") or headers.get("x-goog-request-id", "")
+
+    def _generate_json(
+        self,
+        *,
+        prompt: str,
+        schema: type[StructuredPayload],
+        file_bytes: bytes | None = None,
+        media_type: str = "",
+    ) -> ExtractionResult:
+        client = self._client()
+        try:
+            from google.genai import types
+        except ImportError as exc:
+            raise AIProviderError("Gemini support requires the google-genai package.") from exc
+
+        contents = [prompt]
+        if file_bytes is not None:
+            contents.append(types.Part.from_bytes(data=file_bytes, mime_type=media_type))
+
+        started = time.monotonic()
+        try:
+            response = client.models.generate_content(
+                model=self.config["model"],
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_json_schema=schema.model_json_schema(),
+                    max_output_tokens=8192,
+                ),
+            )
+        except Exception as exc:
+            raise AIProviderError(f"Gemini request failed: {exc}") from exc
+
+        raw_text = getattr(response, "text", "") or ""
+        raw_response = self._dump_gemini_response(response)
+        payload = self._parse_payload(raw_text, schema, raw_response=raw_response)
+        return ExtractionResult(
+            payload=payload,
+            raw_response=raw_response,
+            latency_ms=int((time.monotonic() - started) * 1000),
+            provider_request_id=self._gemini_request_id(response),
+        )
+
+    def _request_structured_payload(
+        self,
+        *,
+        prompt: str,
+        file_name: str,
+        content_type: str,
+        file_bytes: bytes,
+        schema: type[StructuredPayload],
+    ) -> ExtractionResult:
+        media_type = content_type or mimetypes.guess_type(file_name)[0] or "application/octet-stream"
+        return self._generate_json(
+            prompt=prompt,
+            schema=schema,
+            file_bytes=file_bytes,
+            media_type=media_type,
+        )
+
+    def repair_invoice_payload(
+        self,
+        *,
+        raw_text: str = "",
+        file_name: str = "",
+        content_type: str = "",
+        file_bytes: bytes | None = None,
+    ) -> ExtractionResult:
+        if file_bytes is not None:
+            return self._request_structured_payload(
+                prompt=self._invoice_document_retry_prompt(raw_text),
+                file_name=file_name,
+                content_type=content_type,
+                file_bytes=file_bytes,
+                schema=InvoiceIntakeExtraction,
+            )
+        return self._generate_json(
+            prompt=self._invoice_repair_prompt(raw_text),
+            schema=InvoiceIntakeExtraction,
+        )
+
+
+def get_intake_provider():
+    provider_name = getattr(settings, "AI_INTAKE_PROVIDER", "auto")
+    if provider_name == "auto":
+        if settings.GEMINI.get("api_key"):
+            return GeminiIntakeClient()
+        if all(
+            settings.AZURE_OPENAI.get(key)
+            for key in ("endpoint", "api_key", "deployment", "api_version")
+        ):
+            return AzureOpenAIIntakeClient()
+        raise AIProviderNotConfiguredError(
+            "AI intake is not configured. Add GEMINI_API_KEY, or configure all Azure OpenAI settings."
+        )
+    if provider_name in {"azure", "azure_openai"}:
+        return AzureOpenAIIntakeClient()
+    if provider_name == "gemini":
+        return GeminiIntakeClient()
+    raise AIProviderNotConfiguredError(
+        f"Unsupported AI_INTAKE_PROVIDER {provider_name!r}. Use 'auto', 'azure_openai', or 'gemini'."
+    )

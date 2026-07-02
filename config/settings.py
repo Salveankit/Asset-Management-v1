@@ -15,12 +15,16 @@ env = environ.Env(
     PRODUCT_LOGO=(str, ""),
     CELERY_BROKER_URL=(str, "redis://127.0.0.1:6379/0"),
     CELERY_RESULT_BACKEND=(str, "redis://127.0.0.1:6379/1"),
+    AI_INTAKE_PROVIDER=(str, "auto"),
     AZURE_OPENAI_ENDPOINT=(str, ""),
     AZURE_OPENAI_API_KEY=(str, ""),
     AZURE_OPENAI_DEPLOYMENT=(str, ""),
     AZURE_OPENAI_API_VERSION=(str, ""),
     AZURE_OPENAI_TIMEOUT_SECONDS=(int, 30),
     AZURE_OPENAI_MAX_RETRIES=(int, 3),
+    GEMINI_API_KEY=(str, ""),
+    GEMINI_MODEL=(str, "gemini-2.5-flash"),
+    GEMINI_TIMEOUT_SECONDS=(int, 30),
 )
 local_env = BASE_DIR / ".env.local"
 if local_env.exists():
@@ -189,6 +193,13 @@ AZURE_OPENAI = {
     'api_version': env("AZURE_OPENAI_API_VERSION"),
     'timeout_seconds': env("AZURE_OPENAI_TIMEOUT_SECONDS"),
     'max_retries': env("AZURE_OPENAI_MAX_RETRIES"),
+}
+
+AI_INTAKE_PROVIDER = env("AI_INTAKE_PROVIDER").strip().lower()
+GEMINI = {
+    'api_key': env("GEMINI_API_KEY"),
+    'model': env("GEMINI_MODEL"),
+    'timeout_seconds': env("GEMINI_TIMEOUT_SECONDS"),
 }
 
 

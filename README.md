@@ -47,7 +47,20 @@ python manage.py runserver
 
 ## AI Intake Configuration
 
-The AI intake flow works without committed secrets, but Azure OpenAI-backed extraction requires local values for:
+The AI intake flow works without committed secrets. `AI_INTAKE_PROVIDER=auto` selects Gemini when
+`GEMINI_API_KEY` is present, otherwise it selects Azure OpenAI when all Azure settings are present.
+
+For Gemini image and PDF extraction, set:
+
+- `AI_INTAKE_PROVIDER=gemini`
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL=gemini-2.5-flash`
+
+For Vercel, add `GEMINI_API_KEY` as a Project Environment Variable for Production and Preview, then
+redeploy. `GEMINI_MODEL` and `GEMINI_TIMEOUT_SECONDS` have deployment-safe defaults, so they are optional.
+Keep API keys out of `.env.example` and all committed files.
+
+For Azure OpenAI-backed extraction, set `AI_INTAKE_PROVIDER=azure_openai` and provide:
 
 - `AZURE_OPENAI_ENDPOINT`
 - `AZURE_OPENAI_API_KEY`
